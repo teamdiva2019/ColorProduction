@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib
+import matplotlib.colors
 import matplotlib.cm as cm
 from matplotlib.colors import ListedColormap
 from netCDF4 import Dataset, num2date
@@ -8,6 +8,15 @@ import time
 import sys
 import struct
 import os
+
+# The file takes a netcdf file and generates a
+# binary file with each of the required colors.
+# If the data is vectorized, it will also
+# generate a directions file.
+# BY DEFAULT: The file writing is turned off
+# because that is main thing that slows down the program.
+# Turn on at your own risk.
+
 
 # Get script directory
 scriptDir = os.path.dirname(os.path.realpath(__file__))
@@ -33,8 +42,10 @@ if len(varNames) > 1:
 firstVar = varNames[0]
 with open(scriptDir + './/metadata.txt', 'w') as f:
     # For each variable, write the name of it
+    f.write('Variables\n')
     for var in varNames:
-        f.write(allVariables[var].long_name + '\n' + allVariables[var].units + '\n')
+        f.write(var + '\n' + allVariables[var].long_name +
+                '\n' + allVariables[var].units + '\n')
     # Read in the data. No distinction here on whether 1D or 2D
     # Stack x1, x2, ..., xn coordinates on top of each other
     data = np.stack([allVariables[var][:].flatten() for var in varNames])
@@ -43,7 +54,7 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
     # Directions for 2 variables ONLY!!!
     if isVectorized:
         if len(varNames) == 2:
-            directions = np.arctan2(data[1], data[0]) # arctan of y/x, so data[1] is first
+            directions = np.arctan2(data[1], data[0])  # arctan of y/x, so data[1] is first
         else:
             print('Directions in 3D space not supported!')
             sys.exit(2)
@@ -56,6 +67,7 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
 
     # Only need to print shape once, as all variables need to have
     # same shape
+    f.write('Shape\n')
     f.write(str(allVariables[firstVar].shape) + '\n')
     # Get the dimensions of a sample variable
     # By design, the other variables must have the
@@ -64,6 +76,7 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
     # For each dimension, write the name,
     # the start value, the end value,
     # and the step
+    f.write('Dimensions\n')
     for dim in varDims:
         vals = allVariables[dim][:]
         if dim == 'time':
@@ -105,12 +118,12 @@ gendMap = ListedColormap(PUcols, N=len(PUcols))
 gendMap.set_under('black', 1)
 
 # Check to see if the data is vectorized
-if len(varNames) > 1:
-    # Write the directions into a file
-    packed = struct.pack('f'*len(directions), *directions)
-    f = open(scriptDir + './/Directions//directs_' + firstVar + '.bin', 'wb')
-    f.write(packed)
-    f.close()
+# if len(varNames) > 1:
+#     # Write the directions into a file
+#     packed = struct.pack('f'*len(directions), *directions)
+#     f = open(scriptDir + './/Directions//directs_' + firstVar + '.bin', 'wb')
+#     f.write(packed)
+#     f.close()
 
 # Read in all the data and fill in nans
 # if necessary
@@ -127,10 +140,10 @@ norm = matplotlib.colors.Normalize(vmin=minVal, vmax=maxVal)
 mapper = cm.ScalarMappable(norm=norm, cmap=gendMap)
 
 # Map the data. Take the first 3 columns as last column is alpha
-colorMappedData = mapper.to_rgba(data, alpha=False, bytes=True)[:,:3]
+colorMappedData = mapper.to_rgba(data, alpha=False, bytes=True)[:, :3]
 
 # Save the data to a binary file to minimize size
-colorMappedData.tofile(scriptDir + './/ColorFromData//colors_' + firstVar + '.bin')
+# colorMappedData.tofile(scriptDir + './/ColorFromData//colors_' + firstVar + '.bin')
 
 end = time.clock()
 print(end - start, 'seconds.')
