@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import os
 
 # This file will generate a static image of the very
@@ -34,8 +35,9 @@ colors = np.fromfile('.//ColorFromData//colors_' + filename + '.bin',
                      dtype=np.uint8, count=shape[-2] * shape[-1] * 3).reshape(shape[-2], shape[-1], 3)
 # Read in directions, if there are any
 if isVectorized:
-    directions = np.fromfile('.//Directions//colors_' + filename + '.bin',
+    directions = np.fromfile('.//Directions//directs_' + filename + '.bin',
                              dtype=np.float32, count=shape[-2] * shape[-1]).reshape(shape[-2], shape[-1])
+    print(directions)
 print(colors)
 
 # Gather the latitude, longitude, pressure, and time data
@@ -52,13 +54,28 @@ latZero, longZero = np.abs([latData[0] / latData[2], longData[0] / longData[2]])
 print(latZero, longZero)
 print(latData, longData)
 # Plot the image along with correct axes
-plt.figure(figsize=(20, 20))
-plt.rcParams.update({'font.size': 22})
-plt.imshow(colors,
-           origin=[46, 0],
-           extent=(longData[0], longData[1], latData[0], latData[1]))  # Prevents the flipping of image
-plt.xticks(np.arange(longData[0], longData[1], 20 * longData[2]))
-plt.yticks(np.arange(latData[0], latData[1], 10 * latData[2]))
+if isVectorized:
+    fig = plt.figure(figsize=(70, 70)) # Need to be able to zoom in
+    plt.rcParams.update({'font.size': 32})
+else:
+    fig= plt.figure(figsize=(20, 20))
+    plt.rcParams.update({'font.size': 22})
+ax = plt.subplot(111)
+if isVectorized:
+    ax.quiver(np.cos(directions), np.sin(directions))  # We have directions, so do sin and cos
+plt.imshow(colors, origin=[46, 0])
+# Label the axes correctly. The origin argument ensures
+# correct orientation.
+ax.get_xaxis().set_major_formatter(
+    matplotlib.ticker.FuncFormatter(
+        lambda x, i: "{0:.2f}".format(x + longData[2] + longData[0])
+    )
+)
+ax.get_yaxis().set_major_formatter(
+    matplotlib.ticker.FuncFormatter(
+        lambda y, i: "{0:.2f}".format(y * latData[2] + latData[0])
+    )
+)
 # Label axes and put title.
 # Axes are assumed to be degrees North for latitude
 # and degrees East for longitude unless otherwise changed.
