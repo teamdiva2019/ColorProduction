@@ -55,10 +55,10 @@ print(latZero, longZero)
 print(latData, longData)
 # Plot the image along with correct axes
 if isVectorized:
-    fig = plt.figure(figsize=(70, 70)) # Need to be able to zoom in
+    fig = plt.figure(figsize=(70, 70))  # Need to be able to zoom in
     plt.rcParams.update({'font.size': 32})
 else:
-    fig= plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=(20, 20))
     plt.rcParams.update({'font.size': 22})
 ax = plt.subplot(111)
 if isVectorized:
@@ -66,16 +66,14 @@ if isVectorized:
 plt.imshow(colors, origin=[46, 0])
 # Label the axes correctly. The origin argument ensures
 # correct orientation.
-ax.get_xaxis().set_major_formatter(
-    matplotlib.ticker.FuncFormatter(
-        lambda x, i: "{0:.2f}".format(x + longData[2] + longData[0])
-    )
+longFormatter = matplotlib.ticker.FuncFormatter(
+    lambda x, i: "{0:.2f}".format(x * longData[2] + longData[0])
 )
-ax.get_yaxis().set_major_formatter(
-    matplotlib.ticker.FuncFormatter(
-        lambda y, i: "{0:.2f}".format(y * latData[2] + latData[0])
-    )
+latFormatter = matplotlib.ticker.FuncFormatter(
+    lambda y, i: "{0:.2f}".format(y * latData[2] + latData[0])
 )
+ax.get_xaxis().set_major_formatter(longFormatter)
+ax.get_yaxis().set_major_formatter(latFormatter)
 # Label axes and put title.
 # Axes are assumed to be degrees North for latitude
 # and degrees East for longitude unless otherwise changed.
@@ -86,4 +84,19 @@ plt.xlabel('Degrees East')
 plt.ylabel('Degrees North')
 plt.savefig(scriptDir + './/GennedSamples//' + filename + '.png')
 plt.show()
+
+########################################################################
+# PLOTTING A STREAMPLOT (subset of full data)
+fig = plt.figure(figsize=(70, 70))
+ax = plt.subplot(111)
+ax.streamplot(x=np.arange(colors.shape[1]),
+               y=np.arange(colors.shape[0]),
+               u=np.cos(directions), v=np.sin(directions),
+               density=10, arrowsize=0.8)
+ax.get_xaxis().set_major_formatter(longFormatter)
+ax.get_yaxis().set_major_formatter(latFormatter)
+ax.set_aspect('equal')
+plt.savefig(scriptDir + './/GennedSamples//' + filename + '_streamed.png')
+plt.show()
+
 
