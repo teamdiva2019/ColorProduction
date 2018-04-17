@@ -68,7 +68,8 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
     # Only need to print shape once, as all variables need to have
     # same shape
     f.write('Shape\n')
-    f.write(str(allVariables[firstVar].shape) + '\n')
+    dataShape = list(allVariables[firstVar].shape)
+    f.write(str(dataShape) + '\n')
     # Get the dimensions of a sample variable
     # By design, the other variables must have the
     # same dimensions
@@ -89,6 +90,10 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
             timeStep = num2date(vals[1], units=timeUnit, calendar=timeCalendar) - endpoints[0]
             f.write('\n'.join(map(str, [dim, endpoints[0], endpoints[1], timeStep])) + '\n')
         else:
+            if 'lat' in dim:
+                latBounds = (vals[0], vals[-1])
+            elif 'lon' in dim:
+                lonBounds = (vals[0], vals[-1])
             f.write('\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n')
 
 start = time.clock()
@@ -117,22 +122,37 @@ gendMap = ListedColormap(PUcols, N=len(PUcols))
 # Set nan values as black
 gendMap.set_under('black', 1)
 
-# Check to see if the data is vectorized
-# if len(varNames) > 1:
-#     # Write the directions into a file
-#     packed = struct.pack('f'*len(directions), *directions)
-#     f = open(scriptDir + './/Directions//directs_' + firstVar + '.bin', 'wb')
-#     f.write(packed)
-#     f.close()
+################################ WRITE TO FGA ##############################
 
-# Read in all the data and fill in nans
-# if necessary
-# data = allVariables[var][:].flatten()
-# if isinstance(data, np.ma.core.MaskedArray):
-#     data = data.filled(np.nan)
-# # Find the min and max
-# minVal = np.nanmin(data)
-# maxVal = np.nanmax(data)
+# # Writes the directions to a Fluid-Grid ASCII (.fga) file.
+# # The third dimension will be time i.e. going higher
+# # in z is going forward in time. All these
+# # vectors are 2D. That means that the last column will always be 0.
+# # Assume that the dataShape goes (time, lat, lon)
+# if len(varNames) > 0:
+#     minBox = (latBounds[1], lonBounds[0], 0)
+#     maxBox = (latBounds[0], lonBounds[1], dataShape[0])
+#     # Create the 2D array of vectors
+#     vectors = np.zeros((len(directions), 3), dtype='float32')
+#     # The first column is x -> cosine, The second column is y -> sine
+#     vectors[:, 0] = np.cos(directions)
+#     vectors[:, 1] = np.sin(directions)
+#     # Delete the directions array, we don't need it anymore
+#     del directions
+#     with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
+#         # The resolution is the same as the size, except time is pushed to the back
+#         dataShape.append(dataShape.pop(0))
+#         np.savetxt(f, np.array(dataShape))
+#         print('Wrote resolution.')
+#         # The min and max box are the in-house coordinates of the data
+#         np.savetxt(f, np.array(minBox))
+#         np.savetxt(f, np.array(maxBox))
+#         print('Wrote bounding box coordinates.')
+#         # Now to write each vector
+#         np.savetxt(f, vectors)
+#         print('Wrote vector data.')
+
+########################## WRITING COLORS ##########################
 
 # Normalize the data and create a ScalarMappable object.
 # This allows us to efficiently map the values to colors
