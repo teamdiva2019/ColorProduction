@@ -124,33 +124,37 @@ gendMap.set_under('black', 1)
 
 ################################ WRITE TO FGA ##############################
 
-# # Writes the directions to a Fluid-Grid ASCII (.fga) file.
-# # The third dimension will be time i.e. going higher
-# # in z is going forward in time. All these
-# # vectors are 2D. That means that the last column will always be 0.
-# # Assume that the dataShape goes (time, lat, lon)
-# if len(varNames) > 0:
-#     minBox = (latBounds[1], lonBounds[0], 0)
-#     maxBox = (latBounds[0], lonBounds[1], dataShape[0])
-#     # Create the 2D array of vectors
-#     vectors = np.zeros((len(directions), 3), dtype='float32')
-#     # The first column is x -> cosine, The second column is y -> sine
-#     vectors[:, 0] = np.cos(directions)
-#     vectors[:, 1] = np.sin(directions)
-#     # Delete the directions array, we don't need it anymore
-#     del directions
-#     with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
-#         # The resolution is the same as the size, except time is pushed to the back
-#         dataShape.append(dataShape.pop(0))
-#         np.savetxt(f, np.array(dataShape))
-#         print('Wrote resolution.')
-#         # The min and max box are the in-house coordinates of the data
-#         np.savetxt(f, np.array(minBox))
-#         np.savetxt(f, np.array(maxBox))
-#         print('Wrote bounding box coordinates.')
-#         # Now to write each vector
-#         np.savetxt(f, vectors)
-#         print('Wrote vector data.')
+# Writes the directions to a Fluid-Grid ASCII (.fga) file.
+# The third dimension will be time i.e. going higher
+# in z is going forward in time. All these
+# vectors are 2D. That means that the last column will always be 0.
+# Assume that the dataShape goes (time, lat, lon)
+if len(varNames) > 0:
+    minBox = [latBounds[1], lonBounds[0], 0]
+    maxBox = [latBounds[0], lonBounds[1], dataShape[0]]
+    # Change this to false if you want all the layers
+    oneLayer = False
+    if oneLayer:
+        # Create the 2D array of vectors
+        vectors = np.zeros((len(directions[:dataShape[1] * dataShape[2]])+3, 3), dtype='float32')
+        # The first row is resolution: TEST FOR ONE LEVEL
+        vectors[0] = [dataShape[1], dataShape[2], 1]
+        # The next two rows define the bounding box
+        vectors[1] = [latBounds[1], lonBounds[0], 0]
+        vectors[2] = [latBounds[0], lonBounds[1], 0]
+        # The rest are the vectors in that level
+        vectors[3:, 0] = np.cos(directions[:dataShape[1] * dataShape[2]])
+        vectors[3:, 1] = np.sin(directions[:dataShape[1] * dataShape[2]])
+    else:
+        vectors = np.zeros((len(directions)+3, 3), dtype='float32')
+        vectors[0] = [dataShape[1], dataShape[2], dataShape[0]]
+        vectors[1] = minBox
+        vectors[2] = maxBox
+        vectors[3:, 0] = np.cos(directions)
+        vectors[3:, 1] = np.sin(directions)
+    del directions
+    with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
+        np.savetxt(f, vectors, delimiter=',', newline='\r\n', fmt='%4.7f')
 
 ########################## WRITING COLORS ##########################
 
