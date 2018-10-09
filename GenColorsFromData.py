@@ -3,7 +3,6 @@ import matplotlib.colors
 import matplotlib.cm as cm
 from matplotlib.colors import ListedColormap
 from netCDF4 import Dataset, num2date
-import GenColorMap
 import time
 import sys
 import struct
@@ -91,9 +90,9 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
             f.write('\n'.join(map(str, [dim, endpoints[0], endpoints[1], timeStep])) + '\n')
         else:
             if 'lat' in dim:
-                latBounds = (vals[0], vals[-1])
+                latBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
             elif 'lon' in dim:
-                lonBounds = (vals[0], vals[-1])
+                lonBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
             f.write('\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n')
 
 start = time.clock()
@@ -130,31 +129,78 @@ gendMap.set_under('black', 1)
 # vectors are 2D. That means that the last column will always be 0.
 # Assume that the dataShape goes (time, lat, lon)
 if len(varNames) > 0:
-    minBox = [latBounds[1], lonBounds[0], 0]
-    maxBox = [latBounds[0], lonBounds[1], dataShape[0]]
-    # Change this to false if you want all the layers
-    oneLayer = False
-    if oneLayer:
-        # Create the 2D array of vectors
-        vectors = np.zeros((len(directions[:dataShape[1] * dataShape[2]])+3, 3), dtype='float32')
-        # The first row is resolution: TEST FOR ONE LEVEL
-        vectors[0] = [dataShape[1], dataShape[2], 1]
-        # The next two rows define the bounding box
-        vectors[1] = [latBounds[1], lonBounds[0], 0]
-        vectors[2] = [latBounds[0], lonBounds[1], 0]
-        # The rest are the vectors in that level
-        vectors[3:, 0] = np.cos(directions[:dataShape[1] * dataShape[2]])
-        vectors[3:, 1] = np.sin(directions[:dataShape[1] * dataShape[2]])
-    else:
-        vectors = np.zeros((len(directions)+3, 3), dtype='float32')
-        vectors[0] = [dataShape[1], dataShape[2], dataShape[0]]
-        vectors[1] = minBox
-        vectors[2] = maxBox
-        vectors[3:, 0] = np.cos(directions)
-        vectors[3:, 1] = np.sin(directions)
-    del directions
-    with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
-        np.savetxt(f, vectors, delimiter=',', newline='\r\n', fmt='%4.7f')
+    print('Magnitude:', data)
+    print('Directions:', directions)
+    oneLevelPoints = dataShape[1] * dataShape[2]  # Working with one level for now
+    # Convert the degree step to radians
+    # makes it easier later
+    latBounds *= np.pi / 180
+    lonBounds *= np.pi / 180
+    print('Lat bounds:', latBounds)
+    print('Long bounds:', lonBounds)
+    # I'll be following the word doc and mapping
+    scale = 1  # Change this to affect the size of the sphere
+    minBox = [(-1) * scale] * 3
+    maxBox = [scale] * 3
+    # Distance between vectors on top latitude.
+    # Change this to adjust resolution
+    distBet = 1
+    # Radius of the top intersecting sphere
+    rTop = distBet / lonBounds[2]
+    # Diameter of sphere in resolution units i.e. not the actual diameter
+    D = int(2 * rTop / np.sin(latBounds[2]) + 1)
+    resStep = (2 * scale) / D
+    print(D, resStep)
+    # Calculate orientation of vectors
+    # Start with unit vectors
+    uvs = np.array([np.cos(directions[:oneLevelPoints]), np.sin(directions[:oneLevelPoints])])\
+        .reshape(dataShape[1], dataShape[2], 2)
+    vects3D = np.zeros(dataShape[1] * dataShape[2] * 3).reshape(dataShape[1], dataShape[2], 3)
+    vects3D[:, :, :2] = uvs
+    del uvs
+    print(vects3D[0, 0])
+    for latInd in range(dataShape[1]):
+        for lonInd in range(dataShape[2]):
+            lat = latBounds[0] + latInd * latBounds[2]
+            lon = lonBounds[0] + lonInd * lonBounds[2]
+            rotMatrix = np.dot(
+                np.array([
+                    [np.cos(lon), -np.sin(lon), 0],
+                    [np.sin(lon), np.cos(lon), 0],
+                    [0, 0, 1]
+                ]),
+                np.array([
+                    [np.cos(lat), 0, np.sin(lat)],
+                    [0, 1, 0],
+                    [-np.sin(lat), 0, np.cos(lat)]
+                ])
+            )
+            # Rotate the vector at the location
+            vects3D[latInd, lonInd] = np.dot(rotMatrix, vects3D[latInd, lonInd])
+    print(vects3D[0, 0])
+
+    # Now we will deal with placing the vectors at the correct location
+    fgaVectors = np.zeros((D, D, D, 3))
+    for latInd in range(dataShape[1]):
+        for lonInd in range(dataShape[2]):
+            lat = latBounds[0] + latInd * latBounds[2]
+            lon = lonBounds[0] + lonInd * lonBounds[2]
+            x, y, z = (
+                (D/2) * np.sin(np.pi/2 - lat) * np.cos(lon),
+                (D/2) * np.sin(np.pi/2 - lat) * np.cos(lat),
+                (D/2) * np.cos(np.pi/2 - lat)
+            )
+            # Find the index
+            xi, yi, zi = (
+                np.round((x + (D/2)) / resStep),
+                np.round((y + (D/2)) / resStep),
+                np.round((z + (D/2)) / resStep)
+            )
+            # Set it equal to it in our fga array
+            fgaVectors[xi, yi, zi] = vects3D[latInd, lonInd]
+    print(fgaVectors)
+    # with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
+    #     np.savetxt(f, vectors, delimiter=',', newline='\r\n', fmt='%4.7f')
 
 ########################## WRITING COLORS ##########################
 
