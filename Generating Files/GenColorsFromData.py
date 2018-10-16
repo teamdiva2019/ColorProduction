@@ -123,84 +123,84 @@ gendMap.set_under('black', 1)
 
 ################################ WRITE TO FGA ##############################
 
-# Writes the directions to a Fluid-Grid ASCII (.fga) file.
-# The third dimension will be time i.e. going higher
-# in z is going forward in time. All these
-# vectors are 2D. That means that the last column will always be 0.
-# Assume that the dataShape goes (time, lat, lon)
-if len(varNames) > 0:
-    print('Magnitude:', data)
-    print('Directions:', directions)
-    oneLevelPoints = dataShape[1] * dataShape[2]  # Working with one level for now
-    # Convert the degree step to radians
-    # makes it easier later
-    latBounds *= np.pi / 180
-    lonBounds *= np.pi / 180
-    print('Lat bounds:', latBounds)
-    print('Long bounds:', lonBounds)
-    # I'll be following the word doc and mapping
-    scale = 1  # Change this to affect the size of the sphere
-    minBox = [(-1) * scale] * 3
-    maxBox = [scale] * 3
-    # Distance between vectors on top latitude.
-    # Change this to adjust resolution
-    distBet = 1
-    # Radius of the top intersecting sphere
-    rTop = distBet / lonBounds[2]
-    # Diameter of sphere in resolution units i.e. not the actual diameter
-    D = int(2 * rTop / np.sin(latBounds[2]) + 1)
-    resStep = (2 * scale) / D
-    print(D, resStep)
-    # Calculate orientation of vectors
-    # Start with unit vectors
-    uvs = np.array([np.cos(directions[:oneLevelPoints]), np.sin(directions[:oneLevelPoints])])\
-        .reshape(dataShape[1], dataShape[2], 2)
-    vects3D = np.zeros(dataShape[1] * dataShape[2] * 3).reshape(dataShape[1], dataShape[2], 3)
-    vects3D[:, :, :2] = uvs
-    del uvs
-    print(vects3D[0, 0])
-    for latInd in range(dataShape[1]):
-        for lonInd in range(dataShape[2]):
-            lat = latBounds[0] + latInd * latBounds[2]
-            lon = lonBounds[0] + lonInd * lonBounds[2]
-            rotMatrix = np.dot(
-                np.array([
-                    [np.cos(lon), -np.sin(lon), 0],
-                    [np.sin(lon), np.cos(lon), 0],
-                    [0, 0, 1]
-                ]),
-                np.array([
-                    [np.cos(lat), 0, np.sin(lat)],
-                    [0, 1, 0],
-                    [-np.sin(lat), 0, np.cos(lat)]
-                ])
-            )
-            # Rotate the vector at the location
-            vects3D[latInd, lonInd] = np.dot(rotMatrix, vects3D[latInd, lonInd])
-    print(vects3D[0, 0])
-
-    # Now we will deal with placing the vectors at the correct location
-    fgaVectors = np.zeros((D, D, D, 3))
-    for latInd in range(dataShape[1]):
-        for lonInd in range(dataShape[2]):
-            lat = latBounds[0] + latInd * latBounds[2]
-            lon = lonBounds[0] + lonInd * lonBounds[2]
-            x, y, z = (
-                (D/2) * np.sin(np.pi/2 - lat) * np.cos(lon),
-                (D/2) * np.sin(np.pi/2 - lat) * np.cos(lat),
-                (D/2) * np.cos(np.pi/2 - lat)
-            )
-            # Find the index
-            xi, yi, zi = (
-                np.round((x + (D/2)) / resStep),
-                np.round((y + (D/2)) / resStep),
-                np.round((z + (D/2)) / resStep)
-            )
-            # Set it equal to it in our fga array
-            fgaVectors[xi, yi, zi] = vects3D[latInd, lonInd]
-    print(fgaVectors)
-    # with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
-    #     np.savetxt(f, vectors, delimiter=',', newline='\r\n', fmt='%4.7f')
+# # Writes the directions to a Fluid-Grid ASCII (.fga) file.
+# # The third dimension will be time i.e. going higher
+# # in z is going forward in time. All these
+# # vectors are 2D. That means that the last column will always be 0.
+# # Assume that the dataShape goes (time, lat, lon)
+# if len(varNames) > 0:
+#     print('Magnitude:', data)
+#     print('Directions:', directions)
+#     oneLevelPoints = dataShape[1] * dataShape[2]  # Working with one level for now
+#     # Convert the degree step to radians
+#     # makes it easier later
+#     latBounds *= np.pi / 180
+#     lonBounds *= np.pi / 180
+#     print('Lat bounds:', latBounds)
+#     print('Long bounds:', lonBounds)
+#     # I'll be following the word doc and mapping
+#     scale = 1  # Change this to affect the size of the sphere
+#     minBox = [(-1) * scale] * 3
+#     maxBox = [scale] * 3
+#     # Distance between vectors on top latitude.
+#     # Change this to adjust resolution
+#     distBet = 1
+#     # Radius of the top intersecting sphere
+#     rTop = distBet / lonBounds[2]
+#     # Diameter of sphere in resolution units i.e. not the actual diameter
+#     D = int(2 * rTop / np.sin(latBounds[2]) + 1)
+#     resStep = (2 * scale) / D
+#     print(D, resStep)
+#     # Calculate orientation of vectors
+#     # Start with unit vectors
+#     uvs = np.array([np.cos(directions[:oneLevelPoints]), np.sin(directions[:oneLevelPoints])])\
+#         .reshape(dataShape[1], dataShape[2], 2)
+#     vects3D = np.zeros(dataShape[1] * dataShape[2] * 3).reshape(dataShape[1], dataShape[2], 3)
+#     vects3D[:, :, :2] = uvs
+#     del uvs
+#     print(vects3D[0, 0])
+#     for latInd in range(dataShape[1]):
+#         for lonInd in range(dataShape[2]):
+#             lat = latBounds[0] + latInd * latBounds[2]
+#             lon = lonBounds[0] + lonInd * lonBounds[2]
+#             rotMatrix = np.dot(
+#                 np.array([
+#                     [np.cos(lon), -np.sin(lon), 0],
+#                     [np.sin(lon), np.cos(lon), 0],
+#                     [0, 0, 1]
+#                 ]),
+#                 np.array([
+#                     [np.cos(lat), 0, np.sin(lat)],
+#                     [0, 1, 0],
+#                     [-np.sin(lat), 0, np.cos(lat)]
+#                 ])
+#             )
+#             # Rotate the vector at the location
+#             vects3D[latInd, lonInd] = np.dot(rotMatrix, vects3D[latInd, lonInd])
+#     print(vects3D[0, 0])
+#
+#     # Now we will deal with placing the vectors at the correct location
+#     fgaVectors = np.zeros((D, D, D, 3))
+#     for latInd in range(dataShape[1]):
+#         for lonInd in range(dataShape[2]):
+#             lat = latBounds[0] + latInd * latBounds[2]
+#             lon = lonBounds[0] + lonInd * lonBounds[2]
+#             x, y, z = (
+#                 (D/2) * np.sin(np.pi/2 - lat) * np.cos(lon),
+#                 (D/2) * np.sin(np.pi/2 - lat) * np.cos(lat),
+#                 (D/2) * np.cos(np.pi/2 - lat)
+#             )
+#             # Find the index
+#             xi, yi, zi = (
+#                 np.round((x + (D/2)) / resStep),
+#                 np.round((y + (D/2)) / resStep),
+#                 np.round((z + (D/2)) / resStep)
+#             )
+#             # Set it equal to it in our fga array
+#             fgaVectors[xi, yi, zi] = vects3D[latInd, lonInd]
+#     print(fgaVectors)
+#     # with open(scriptDir + './/Directions//directs_' + firstVar + '.fga', 'wb') as f:
+#     #     np.savetxt(f, vectors, delimiter=',', newline='\r\n', fmt='%4.7f')
 
 ########################## WRITING COLORS ##########################
 
