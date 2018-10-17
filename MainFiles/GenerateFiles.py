@@ -10,6 +10,7 @@ from netCDF4 import Dataset, num2date
 # Need this line to run the file from anywhere
 sys.path.append('.//MainFiles')
 from MakeAndSavePUMap import makeColorMap
+from WriteToFGA import writeFGAFile
 
 def isNCFile(filename):
     if filename[-3:] != '.nc':
@@ -36,8 +37,18 @@ parser.add_argument('-c', '--colors', type=isValidColor,
                     help='A list of gradients for the color map. Specify a list of 3'
                          '0-255 integers (RGB) for each color gradient. Requires at least'
                          'two colors to generate a color map.')
+parser.add_argument('-fga', '--FGA', required=False,
+                    dest='rad_step', nargs=2,
+                    help='Specify the RADIUS then the resolution STEP for an FGA'
+                         'file built from vectorized file. Please specify the radius'
+                         'FIRST and then the step')
 
 args = parser.parse_args(sys.argv[1:])
+isVectorized = False
+if args.rad_step is not None:
+    isVectorized = True
+    rad = args.rad_step[0]
+    step = args.rad_step[1]
 
 # Check to see if the list of colors is valid
 if args.colors is not None:
@@ -134,3 +145,7 @@ colorMappedData = mapper.to_rgba(data, alpha=False, bytes=True)[:, :3]
 
 # Save the data to a binary file to minimize size
 colorMappedData.tofile(scriptDir + './/ColorFromData//colors_' + firstVar + '.bin')
+
+# See if we need to make an fga file
+if isVectorized:
+    writeFGAFile(Dataset(args.infile), rad, step)
