@@ -27,27 +27,27 @@ def isValidColor(val):
 scriptDir = os.path.dirname(os.path.realpath(__file__))
 # sys.path.append(os.path.join(scriptDir))
 
-parser = argparse.ArgumentParser(description='This program generates the appropriate color files'
+parser = argparse.ArgumentParser(description='This program generates the appropriate color files '
                                              'and FGA files for loading into Unreal Engine.')
 parser.add_argument('infile', type=isNCFile, help='NetCDF file to be transformed to color')
 parser.add_argument('colormap', type=str, default='inferno',
                     help='Color map to use for transformation')
 parser.add_argument('-c', '--colors', type=isValidColor,
                     required=False, dest='colors', nargs='+',
-                    help='A list of gradients for the color map. Specify a list of 3'
-                         '0-255 integers (RGB) for each color gradient. Requires at least'
+                    help='A list of gradients for the color map. Specify a list of 3 '
+                         '0-255 integers (RGB) for each color gradient. Requires at least '
                          'two colors to generate a color map.')
-parser.add_argument('-fga', '--FGA', required=False,
+parser.add_argument('-fga', '--FGA', required=False, type=float,
                     dest='rad_step', nargs=2,
-                    help='Specify the RADIUS then the resolution STEP for an FGA'
-                         'file built from vectorized file. Please specify the radius'
+                    help='Specify the RADIUS then the resolution STEP for an FGA '
+                         'file built from vectorized file. Please specify the radius '
                          'FIRST and then the step')
 
 args = parser.parse_args(sys.argv[1:])
 isVectorized = False
 if args.rad_step is not None:
     isVectorized = True
-    rad = args.rad_step[0]
+    rad = int(args.rad_step[0])
     step = args.rad_step[1]
 
 # Check to see if the list of colors is valid
@@ -128,7 +128,7 @@ with open(scriptDir + './/metadata.txt', 'w') as f:
                 lonBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
             f.write('\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n')
 # Read the colormap
-PUcols = np.loadtxt(scriptDir + './/ColorMaps//' + args.colormap + '.txt')
+PUcols = np.loadtxt(os.path.join(scriptDir, '..//ColorMaps//' + args.colormap + '.txt'))
 
 # Create the Color map object
 gendMap = ListedColormap(PUcols, N=len(PUcols))
@@ -144,7 +144,7 @@ mapper = cm.ScalarMappable(norm=norm, cmap=gendMap)
 colorMappedData = mapper.to_rgba(data, alpha=False, bytes=True)[:, :3]
 
 # Save the data to a binary file to minimize size
-colorMappedData.tofile(scriptDir + './/ColorFromData//colors_' + firstVar + '.bin')
+colorMappedData.tofile(os.path.join(scriptDir, '..//ColorFromData//colors_' + firstVar + '.bin'))
 
 # See if we need to make an fga file
 if isVectorized:
