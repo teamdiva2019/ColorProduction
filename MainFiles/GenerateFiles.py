@@ -11,6 +11,7 @@ from netCDF4 import Dataset, num2date
 sys.path.append('.//MainFiles')
 from MakeAndSavePUMap import makeColorMap
 from WriteToFGA import writeFGAFile
+from Metadata import Metadata
 
 def isNCFile(filename):
     if filename[-3:] != '.nc':
@@ -59,74 +60,80 @@ if args.colors is not None:
     makeColorMap(args.colormap, args.colors)
 # Once it's guaranteed there's a color map, then generate the colors
 #################### METADATA #####################
-data = Dataset(args.infile)
-allVariables = data.variables
-# print(allVariables)
-# Sometimes we have time_bnds, lat_bnds, etc.
-# Keep anything that doesn't have 'bnds'
-varNames = list(filter(lambda x: 'bnds' not in x, list(allVariables.keys())))
-# Remove the dimensions
-varNames = list(filter(lambda x: x not in data.dimensions, varNames))
-print(varNames)
-isVectorized = False
-if len(varNames) > 1:
-    isVectorized = True
-firstVar = varNames[0]
-with open(scriptDir + './/metadata.txt', 'w') as f:
-    # For each variable, write the name of it
-    f.write('Variables\n')
-    for var in varNames:
-        f.write(var + '\n' + allVariables[var].long_name +
-                '\n' + allVariables[var].units + '\n')
-    # Read in the data. No distinction here on whether 1D or 2D
-    # Stack x1, x2, ..., xn coordinates on top of each other
-    data = np.stack([allVariables[var][:].flatten() for var in varNames])
-    if isinstance(data, np.ma.core.MaskedArray):
-        data = data.filled(np.nan)
-    # Directions for 2 variables ONLY!!!
-    if isVectorized:
-        if len(varNames) == 2:
-            directions = np.arctan2(data[1], data[0])  # arctan of y/x, so data[1] is first
-        else:
-            print('Directions in 3D space not supported!')
-            sys.exit(2)
-    # Find magnitude
-    data = np.linalg.norm(data, axis=0)
-    # Print maximum and minimum
-    minVal = np.nanmin(data)
-    maxVal = np.nanmax(data)
-    f.write(str(minVal) + ' ' + str(maxVal) + '\n')
+meta = Metadata(args.infile)
+meta.writeMetadata()
+data = meta.loadData()
+minVal = np.nanmin(data)
+maxVal = np.nanmax(data)
 
-    # Only need to print shape once, as all variables need to have
-    # same shape
-    f.write('Shape\n')
-    dataShape = list(allVariables[firstVar].shape)
-    f.write(str(dataShape) + '\n')
-    # Get the dimensions of a sample variable
-    # By design, the other variables must have the
-    # same dimensions
-    varDims = allVariables[firstVar].dimensions
-    # For each dimension, write the name,
-    # the start value, the end value,
-    # and the step
-    f.write('Dimensions\n')
-    for dim in varDims:
-        vals = allVariables[dim][:]
-        if dim == 'time':
-            timeUnit = allVariables[dim].units
-            try:
-                timeCalendar = allVariables[dim].calendar
-            except AttributeError:
-                timeCalendar = u"gregorian"
-            endpoints = num2date([vals[0], vals[-1]], units=timeUnit, calendar=timeCalendar)
-            timeStep = num2date(vals[1], units=timeUnit, calendar=timeCalendar) - endpoints[0]
-            f.write('\n'.join(map(str, [dim, endpoints[0], endpoints[1], timeStep])) + '\n')
-        else:
-            if 'lat' in dim:
-                latBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
-            elif 'lon' in dim:
-                lonBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
-            f.write('\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n')
+# data = Dataset(args.infile)
+# allVariables = data.variables
+# # print(allVariables)
+# # Sometimes we have time_bnds, lat_bnds, etc.
+# # Keep anything that doesn't have 'bnds'
+# varNames = list(filter(lambda x: 'bnds' not in x, list(allVariables.keys())))
+# # Remove the dimensions
+# varNames = list(filter(lambda x: x not in data.dimensions, varNames))
+# print(varNames)
+# isVectorized = False
+# if len(varNames) > 1:
+#     isVectorized = True
+# firstVar = varNames[0]
+# with open(scriptDir + './/metadata.txt', 'w') as f:
+#     # For each variable, write the name of it
+#     f.write('Variables\n')
+#     for var in varNames:
+#         f.write(var + '\n' + allVariables[var].long_name +
+#                 '\n' + allVariables[var].units + '\n')
+#     # Read in the data. No distinction here on whether 1D or 2D
+#     # Stack x1, x2, ..., xn coordinates on top of each other
+#     data = np.stack([allVariables[var][:].flatten() for var in varNames])
+#     if isinstance(data, np.ma.core.MaskedArray):
+#         data = data.filled(np.nan)
+#     # Directions for 2 variables ONLY!!!
+#     if isVectorized:
+#         if len(varNames) == 2:
+#             directions = np.arctan2(data[1], data[0])  # arctan of y/x, so data[1] is first
+#         else:
+#             print('Directions in 3D space not supported!')
+#             sys.exit(2)
+#     # Find magnitude
+#     data = np.linalg.norm(data, axis=0)
+#     # Print maximum and minimum
+#     minVal = np.nanmin(data)
+#     maxVal = np.nanmax(data)
+#     f.write(str(minVal) + ' ' + str(maxVal) + '\n')
+#
+#     # Only need to print shape once, as all variables need to have
+#     # same shape
+#     f.write('Shape\n')
+#     dataShape = list(allVariables[firstVar].shape)
+#     f.write(str(dataShape) + '\n')
+#     # Get the dimensions of a sample variable
+#     # By design, the other variables must have the
+#     # same dimensions
+#     varDims = allVariables[firstVar].dimensions
+#     # For each dimension, write the name,
+#     # the start value, the end value,
+#     # and the step
+#     f.write('Dimensions\n')
+#     for dim in varDims:
+#         vals = allVariables[dim][:]
+#         if dim == 'time':
+#             timeUnit = allVariables[dim].units
+#             try:
+#                 timeCalendar = allVariables[dim].calendar
+#             except AttributeError:
+#                 timeCalendar = u"gregorian"
+#             endpoints = num2date([vals[0], vals[-1]], units=timeUnit, calendar=timeCalendar)
+#             timeStep = num2date(vals[1], units=timeUnit, calendar=timeCalendar) - endpoints[0]
+#             f.write('\n'.join(map(str, [dim, endpoints[0], endpoints[1], timeStep])) + '\n')
+#         else:
+#             if 'lat' in dim:
+#                 latBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
+#             elif 'lon' in dim:
+#                 lonBounds = np.array([vals[0], vals[-1], vals[1] - vals[0]])
+#             f.write('\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n')
 # Read the colormap
 PUcols = np.loadtxt(os.path.join(scriptDir, '..//ColorMaps//' + args.colormap + '.txt'))
 
@@ -144,7 +151,7 @@ mapper = cm.ScalarMappable(norm=norm, cmap=gendMap)
 colorMappedData = mapper.to_rgba(data, alpha=False, bytes=True)[:, :3]
 
 # Save the data to a binary file to minimize size
-colorMappedData.tofile(os.path.join(scriptDir, '..//ColorFromData//colors_' + firstVar + '.bin'))
+colorMappedData.tofile(os.path.join(scriptDir, '..//ColorFromData//colors_' + meta.varNames[0] + '.bin'))
 
 # See if we need to make an fga file
 if isVectorized:

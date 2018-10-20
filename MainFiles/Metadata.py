@@ -38,9 +38,17 @@ class Metadata:
             self.isVectorized = True
         else:
             self.var = self.varNames[0]
+
+    # Loads the data
+    def loadData(self):
+        data = np.stack([self.allVariables[var][:].flatten() for var in self.varNames])
+        if isinstance(data, np.ma.core.MaskedArray):
+            data = data.filled(np.nan)
+        return np.linalg.norm(data, axis=0)
+
     # Following function writes metadata to
     # a file and returns the loaded data.
-    def writeAndLoadMetadata(self):
+    def writeMetadata(self):
         scriptDir = os.path.dirname(os.path.realpath(__file__))
         with open(scriptDir + './/metadata.txt', 'w') as f:
             # For each variable, write the name of it
@@ -82,4 +90,4 @@ class Metadata:
 
 
 meta = Metadata('..//..//Data//pressfc201012.nc')
-meta.writeAndLoadMetadata()
+meta.writeMetadata()
