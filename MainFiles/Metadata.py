@@ -13,6 +13,7 @@
 
 from netCDF4 import Dataset, num2date
 import numpy as np
+import datetime as dt
 import sys
 import os
 
@@ -26,7 +27,10 @@ class Metadata:
                  endTime=None, timeStamp=None):
         self.sT = startTime
         self.eT = endTime
+        self.sTIndex = 0
+        self.eTIndex = -1
         self.tS = timeStamp
+        self.tSIndex = None
         self.fn = filename
         self.dataset = Dataset(self.fn)
         self.allVariables = self.dataset.variables
@@ -41,7 +45,20 @@ class Metadata:
 
     # Loads the data
     def loadData(self):
-        data = np.stack([self.allVariables[var][:].flatten() for var in self.varNames])
+        # Prioritize having a single timestamp.
+        # Otherwise, use start and end times.
+        # If the end time has -1, that implies a start time
+        # has not been specified, and so get everything until the end.
+        # Otherwise, include the end time in the range.
+        if self.tSIndex is not None:
+            data = np.stack([self.allVariables[var][self.tSIndex].flatten() for var in self.varNames])
+        else:
+            if self.eTIndex < 0:
+                data = np.stack([self.allVariables[var][self.sTIndex : ].flatten()
+                                 for var in self.varNames])
+            else:
+                data = np.stack([self.allVariables[var][self.sTIndex : self.eTIndex + 1].flatten()
+                                 for var in self.varNames])
         if isinstance(data, np.ma.core.MaskedArray):
             data = data.filled(np.nan)
         return np.linalg.norm(data, axis=0)
@@ -63,9 +80,9 @@ class Metadata:
             #     data = data.filled(np.nan)
             # Only need to print shape once, as all variables need to have
             # same shape
-            f.write('Shape\n')
+            # f.write('Shape\n')
             dataShape = list(self.allVariables[self.varNames[0]].shape)
-            f.write(str(dataShape) + '\n')
+            # f.write(str(dataShape) + '\n')
             # Get the dimensions of a sample variable
             # By design, the other variables must have the
             # same dimensions
@@ -73,7 +90,7 @@ class Metadata:
             # For each dimension, write the name,
             # the start value, the end value,
             # and the step
-            f.write('Dimensions\n')
+            dimstr = 'Dimensions\n'
             for dim in varDims:
                 vals = self.allVariables[dim][:]
                 if dim == 'time':
@@ -82,12 +99,49 @@ class Metadata:
                         timeCalendar = self.allVariables[dim].calendar
                     except AttributeError:
                         timeCalendar = u"gregorian"
-                    endpoints = num2date([vals[0], vals[-1]], units=timeUnit, calendar=timeCalendar)
-                    timeStep = num2date(vals[1], units=timeUnit, calendar=timeCalendar) - endpoints[0]
-                    f.write('\n'.join(map(str, [dim, endpoints[0], endpoints[1], timeStep])) + '\n')
+                    # Convert everything to datetime
+                    vals = num2date(vals, units=timeUnit, calendar=timeCalendar)
+                    timeStep = vals[1] - vals[0]
+                    # First check if a timestamp is expected
+                    if self.tS is not None:
+                        if isinstance(self.tS, dt.datetime):
+                            self.tSIndex = np.argmin(np.abs(self.tS - vals))
+                        else:
+                            self.tSIndex = self.tS
+                        # Recalculate the closest timestamp from the index now...
+                        self.tS = vals[self.tSIndex]
+                        dimstr += '\n'.join(map(str, [dim, self.tS, timeStep])) + '\n'
+                    else:
+                        # Find the index for the closest start time
+                        if self.sT is not None:
+                            # Can either be an index or straight up datetime
+                            if isinstance(self.sT, dt.datetime):
+                                self.sTIndex = np.argmin(np.abs(self.sT - vals))
+                            else: # Assumed to have already checked for the proper type
+                                self.sTIndex = self.sT
+                        if self.eT is not None:
+                            if isinstance(self.eT, dt.datetime):
+                                self.eTIndex = np.argmin(np.abs(self.eT - vals))
+                            else:
+                                self.eTIndex = self.eT
+                        dimstr += '\n'.join(map(str, [dim, vals[self.sTIndex], vals[self.eTIndex],
+                                                      timeStep])) + '\n'
                 else:
-                    f.write('\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n')
+                    dimstr += '\n'.join(map(str, [dim, vals[0], vals[-1], vals[1] - vals[0]])) + '\n'
+            # Append the shape string based on time bounds...
+            # Assume only time gets changed...
+            if self.tS is not None:
+                dataShape[0] = 1
+            else:
+                if self.eTIndex < 0:
+                    dataShape[0] = dataShape[0] + self.eTIndex - self.sTIndex + 1
+                else:
+                    dataShape[0] = self.eTIndex - self.sTIndex + 1
+            f.write('Shape\n')
+            f.write(str(dataShape) + '\n')
+            f.write(dimstr)
 
 
-meta = Metadata('..//..//Data//pressfc201012.nc')
+meta = Metadata('..//..//Data//pressfc201012.nc', startTime=dt.datetime(2010,12,5,0,0,0),
+                endTime=dt.datetime(2010,12,20,18,0,0))
 meta.writeMetadata()
