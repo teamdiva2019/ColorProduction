@@ -6,6 +6,7 @@ import matplotlib.colors
 import matplotlib.cm as cm
 from matplotlib.colors import ListedColormap
 from netCDF4 import Dataset, num2date
+import datetime as dt
 
 # Need this line to run the file from anywhere
 sys.path.append('.//MainFiles')
@@ -23,6 +24,13 @@ def isValidColor(val):
         raise argparse.ArgumentTypeError('{} is an invalid color value (0-255 inclusive)'
                                          .format(val))
     return int(val)
+def isCorrectDateFormat(val):
+    try:
+        val = dt.datetime.strptime(val, '%Y-%m-%d-%H-%M-%S')
+    except ValueError:
+        raise argparse.ArgumentTypeError('{} is an valid date format. Need YYYY-MM-DD HH:MM:SS'
+                                         .format(val))
+    return val
 
 # Get script directory
 scriptDir = os.path.dirname(os.path.realpath(__file__))
@@ -43,6 +51,17 @@ parser.add_argument('-fga', '--FGA', required=False, type=float,
                     help='Specify the RADIUS then the resolution STEP for an FGA '
                          'file built from vectorized file. Please specify the radius '
                          'FIRST and then the step')
+parser.add_argument('-st', '--starttime', required=False, type=isCorrectDateFormat,
+                    dest='start_time',
+                    help='Specify the start time of the data in YYYY-MM-DD HH:MM:SS.')
+parser.add_argument('-et', '--endtime', required=False, type=isCorrectDateFormat,
+                    dest='end_time',
+                    help='Specify the end time of the data in YYYY-MM-DD HH:MM:SS.')
+parser.add_argument('-ts', '--timestamp', required=False, type=isCorrectDateFormat,
+                    dest='time_stamp',
+                    help='Specify a certain time stamp to get data from in '
+                         'YYYY-MM-DD HH:MM:SS. Overrides start and end time '
+                         'arguments.')
 
 args = parser.parse_args(sys.argv[1:])
 isVectorized = False
@@ -58,9 +77,23 @@ if args.colors is not None:
     # Otherwise, reshape into an n x 3 array and produce the colormap
     args.colors = np.reshape(args.colors, (-1, 3))
     makeColorMap(args.colormap, args.colors)
+# Check the arguments for times...
+startTime = 0
+endTime = -1
+timestamp = None
+if args.time_stamp is not None:
+    timestamp = args.time_stamp
+elif args.start_time is not None:
+    startTime = args.start_time
+if args.end_time is not None:
+    endTime = args.end_time
 # Once it's guaranteed there's a color map, then generate the colors
 #################### METADATA #####################
-meta = Metadata(args.infile)
+meta = None
+if args.time_stamp is not None:
+    meta = Metadata(args.infile, timestamp=timestamp)
+else:
+    meta = Metadata(args.infile, startTime=startTime, endTime=endTime)
 meta.writeMetadata()
 data = meta.loadData()
 minVal = np.nanmin(data)

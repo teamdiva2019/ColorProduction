@@ -14,7 +14,6 @@
 from netCDF4 import Dataset, num2date
 import numpy as np
 import datetime as dt
-import sys
 import os
 
 # If both are given, then it's [start, end)
@@ -53,12 +52,8 @@ class Metadata:
         if self.tSIndex is not None:
             data = np.stack([self.allVariables[var][self.tSIndex].flatten() for var in self.varNames])
         else:
-            if self.eTIndex < 0:
-                data = np.stack([self.allVariables[var][self.sTIndex : ].flatten()
-                                 for var in self.varNames])
-            else:
-                data = np.stack([self.allVariables[var][self.sTIndex : self.eTIndex + 1].flatten()
-                                 for var in self.varNames])
+            data = np.stack([self.allVariables[var][self.sTIndex : self.eTIndex + 1].flatten()
+                             for var in self.varNames])
         if isinstance(data, np.ma.core.MaskedArray):
             data = data.filled(np.nan)
         return np.linalg.norm(data, axis=0)
@@ -110,7 +105,7 @@ class Metadata:
                             self.tSIndex = self.tS
                         # Recalculate the closest timestamp from the index now...
                         self.tS = vals[self.tSIndex]
-                        dimstr += '\n'.join(map(str, [dim, self.tS, timeStep])) + '\n'
+                        dimstr += '\n'.join(map(str, [dim, self.tS, self.tS, timeStep])) + '\n'
                     else:
                         # Find the index for the closest start time
                         if self.sT is not None:
@@ -124,6 +119,8 @@ class Metadata:
                                 self.eTIndex = np.argmin(np.abs(self.eT - vals))
                             else:
                                 self.eTIndex = self.eT
+                                if self.eTIndex < 0:
+                                    self.eTIndex = len(vals) - 1
                         dimstr += '\n'.join(map(str, [dim, vals[self.sTIndex], vals[self.eTIndex],
                                                       timeStep])) + '\n'
                 else:
@@ -133,15 +130,11 @@ class Metadata:
             if self.tS is not None:
                 dataShape[0] = 1
             else:
-                if self.eTIndex < 0:
-                    dataShape[0] = dataShape[0] + self.eTIndex - self.sTIndex + 1
-                else:
-                    dataShape[0] = self.eTIndex - self.sTIndex + 1
+                dataShape[0] = self.eTIndex - self.sTIndex + 1
             f.write('Shape\n')
             f.write(str(dataShape) + '\n')
             f.write(dimstr)
 
 
-meta = Metadata('..//..//Data//pressfc201012.nc', startTime=dt.datetime(2010,12,5,0,0,0),
-                endTime=dt.datetime(2010,12,20,18,0,0))
-meta.writeMetadata()
+# meta = Metadata('..//..//Data//pressfc201012.nc', startTime=0, endTime=-1)
+# meta.writeMetadata()
