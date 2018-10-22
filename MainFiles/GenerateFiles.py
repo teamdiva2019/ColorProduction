@@ -53,14 +53,14 @@ parser.add_argument('-fga', '--FGA', required=False, type=float,
                          'FIRST and then the step')
 parser.add_argument('-st', '--starttime', required=False, type=isCorrectDateFormat,
                     dest='start_time',
-                    help='Specify the start time of the data in YYYY-MM-DD HH:MM:SS.')
+                    help='Specify the start time of the data in YYYY-MM-DD-HH-MM-SS.')
 parser.add_argument('-et', '--endtime', required=False, type=isCorrectDateFormat,
                     dest='end_time',
-                    help='Specify the end time of the data in YYYY-MM-DD HH:MM:SS.')
+                    help='Specify the end time of the data in YYYY-MM-DD-HH-MM-SS.')
 parser.add_argument('-ts', '--timestamp', required=False, type=isCorrectDateFormat,
                     dest='time_stamp',
                     help='Specify a certain time stamp to get data from in '
-                         'YYYY-MM-DD HH:MM:SS. Overrides start and end time '
+                         'YYYY-MM-DD HH:MM:SS. OVERRIDES start and end time '
                          'arguments.')
 
 args = parser.parse_args(sys.argv[1:])
