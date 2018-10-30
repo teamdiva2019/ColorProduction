@@ -80,13 +80,28 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
             ])
     print('Transform complete!')
 
+    ################# GRAVITY ##################
+
+    # Next is applying a gravitational field...
+    # The application will go on any vector which is currently 0
+    print('Applying gravity...')
+    fgaVectors = np.transpose(np.mgrid[-radius : radius + resStep/2 : resStep,
+                 -radius : radius + resStep/2 : resStep,
+                 -radius: radius + resStep/2 : resStep], (1,2,3,0))
+    # Normalize and flip vectors that
+    # are > radius away...
+    norms = np.linalg.norm(fgaVectors, axis=-1)
+    fgaVectors /= norms[:, :, :, None]
+    fgaVectors[norms > radius] = -1 * fgaVectors[norms > radius]
+    print('Application complete!')
+
+    ######################################################
+
     # It should be trivial that the closest 2 defined points
     # to another point will be on the same xy-plane. Therefore,
     # we can cycle through each latitude level and interpolate
     # around the longitudes. The interpolation will be linear
     # in the direction i.e. a weighted average.
-    countNonzero = 0
-    fgaVectors = np.zeros((DRes, DRes, DRes, 3))
     print('Interpolating vectors...')
     for i, lat in enumerate(latPoints, 0):
         exactLats = exactVectLocs[i]
@@ -150,31 +165,8 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
             # arithmetic progression
             xi, yi, zi = tuple(np.array((point + radius) / resStep, dtype=int))  # Really - (-boxRad)
             fgaVectors[xi, yi, zi] = newVector * windScale
-            countNonzero += 1
             # AND WE'RE DONE WITH INTERPOLATION
     print('Interpolation complete!')
-
-    ################# GRAVITY ##################
-
-    fgaVectors = np.pad(fgaVectors, tuple([(padWidth, padWidth)]) * 3 + tuple([(0, 0)]),
-                        'edge')
-
-    # Next is applying a gravitational field...
-    # The application will go on any vector which is currently 0
-    print('Applying gravity...')
-    axisSpace = np.arange(-radius - padWidth * resStep,
-                          radius + padWidth * resStep + resStep / 2, resStep)
-    for i, x in enumerate(axisSpace, 0):
-        for j, y in enumerate(axisSpace, 0):
-            for k, z in enumerate(axisSpace, 0):
-                if np.all(fgaVectors[i, j, k] == 0):
-                    if np.linalg.norm([x, y, z]) > radius:
-                        fgaVectors[i, j, k] = [-x, -y, -z] / np.linalg.norm([x, y, z]) * gravScale
-                    elif np.linalg.norm([x, y, z]) < radius:
-                        fgaVectors[i, j, k] = [x, y, z] / np.linalg.norm([x, y, z]) * gravScale
-                    countNonzero += 1
-    print('Application complete!')
-    print(countNonzero, 'nonzero vectors out of', DRes ** 3)
 
     ############# WRITING TO FILE ##############
 
@@ -182,7 +174,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # unwrap
     print('Unwrapping and writing...')
     print(DRes, fgaVectors.shape)
-    DRes += 2 * padWidth
+    # DRes += 2 * padWidth
     fgaVectors = fgaVectors.reshape((DRes ** 3, 3), order='F')
 
     fgaVectors = np.vstack(([
