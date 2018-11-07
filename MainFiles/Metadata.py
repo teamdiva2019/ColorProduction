@@ -62,12 +62,11 @@ class Metadata:
     # a file and returns the loaded data.
     def writeMetadata(self):
         scriptDir = os.path.dirname(os.path.realpath(__file__))
-        with open(scriptDir + 'metadata.txt', 'w') as f:
-            f.write('%d\n' % len(self.varNames))
+        with open(scriptDir + './/metadata.txt', 'w') as f:
             # For each variable, write the name of it
             f.write('Variables\n')
             for var in self.varNames:
-                f.write(self.allVariables[var].long_name + '\n' + self.allVariables[var].name +
+                f.write(var + '\n' + self.allVariables[var].long_name +
                         '\n' + self.allVariables[var].units + '\n')
             # Read in the data. No distinction here on whether 1D or 2D
             # Stack x1, x2, ..., xn coordinates on top of each other
@@ -86,8 +85,7 @@ class Metadata:
             # For each dimension, write the name,
             # the start value, the end value,
             # and the step
-            # dimstr = 'Dimensions\n'
-            dimstr = ''
+            dimstr = 'Dimensions\n'
             for dim in varDims:
                 vals = self.allVariables[dim][:]
                 if dim == 'time':
@@ -133,7 +131,7 @@ class Metadata:
                 dataShape[0] = 1
             else:
                 dataShape[0] = self.eTIndex - self.sTIndex + 1
-            # f.write('Shape\n')
+            f.write('Shape\n')
             f.write(str(dataShape) + '\n')
             f.write(dimstr)
 

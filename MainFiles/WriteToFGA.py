@@ -92,7 +92,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # are > radius away...
     norms = np.linalg.norm(fgaVectors, axis=-1)
     fgaVectors /= norms[:, :, :, None]
-    fgaVectors[norms > radius] = -1 * fgaVectors[norms > radius]
+    fgaVectors[norms > radius] = -1 * fgaVectors[norms > radius] * gravScale
     print('Application complete!')
 
     ######################################################

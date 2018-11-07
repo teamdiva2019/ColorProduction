@@ -100,7 +100,7 @@ minVal = np.nanmin(data)
 maxVal = np.nanmax(data)
 
 # Read the colormap
-PUcols = np.loadtxt(os.path.join(scriptDir, '\\..\\ColorMaps\\' + args.colormap + '.txt'))
+PUcols = np.loadtxt(os.path.join(scriptDir, '..//ColorMaps//' + args.colormap + '.txt'))
 
 # Create the Color map object
 gendMap = ListedColormap(PUcols, N=len(PUcols))
