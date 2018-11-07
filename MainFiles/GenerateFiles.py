@@ -11,8 +11,9 @@ import datetime as dt
 # Need this line to run the file from anywhere
 sys.path.append('.//MainFiles')
 from MakeAndSavePUMap import makeColorMap
-from WriteToFGA import writeFGAFile
+# from WriteToFGA import writeFGAFile
 from Metadata import Metadata
+from MapVectorsTo3D import writeFGAFile
 
 def isNCFile(filename):
     if filename[-3:] != '.nc':
