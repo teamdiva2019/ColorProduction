@@ -11,9 +11,9 @@ import datetime as dt
 # Need this line to run the file from anywhere
 sys.path.append('.//MainFiles')
 from MakeAndSavePUMap import makeColorMap
-# from WriteToFGA import writeFGAFile
+from WriteToFGA import writeFGAFile
 from Metadata import Metadata
-from MapVectorsTo3D import writeFGAFile
+# from MapVectorsTo3D import writeFGAFile
 
 def isNCFile(filename):
     if filename[-3:] != '.nc':
@@ -61,7 +61,7 @@ parser.add_argument('-et', '--endtime', required=False, type=isCorrectDateFormat
 parser.add_argument('-ts', '--timestamp', required=False, type=isCorrectDateFormat,
                     dest='time_stamp',
                     help='Specify a certain time stamp to get data from in '
-                         'YYYY-MM-DD HH:MM:SS. OVERRIDES start and end time '
+                         'YYYY-MM-DD-HH-MM-SS. OVERRIDES start and end time '
                          'arguments.')
 
 args = parser.parse_args(sys.argv[1:])

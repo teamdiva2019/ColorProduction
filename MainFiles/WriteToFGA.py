@@ -1,5 +1,5 @@
 import numpy as np
-from netCDF4 import Dataset
+import matplotlib.pyplot as plt
 
 # Function to find the closest 2 points to another point
 def find2Points(p, pointSpace, vectSpace):
@@ -32,6 +32,21 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
 
     numLatPoints = len(latPoints)
     numLonPoints = len(lonPoints)
+
+    #### For horizontal vector field ###
+    # numLatPoints = 5
+    # numLonPoints = 10
+    #
+    # directions = np.zeros(numLatPoints * numLonPoints).reshape((numLatPoints, numLonPoints))
+    # u = np.cos(directions)
+    # v = np.sin(directions)
+    # plt.quiver(u, v)
+    # plt.show()
+    #
+    # latPoints = np.arange(-90 + 180 / (numLatPoints + 1),
+    #                       90 - 180 / (numLatPoints + 1) + 0.01,
+    #                       180 / (numLatPoints + 1)) * np.pi / 180
+    # lonPoints = np.arange(0, 360 - 360 / numLonPoints, 360 / numLonPoints)
 
     u, v = allVariables[varNames[0]][0], allVariables[varNames[1]][0]
 
@@ -92,7 +107,8 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # are > radius away...
     norms = np.linalg.norm(fgaVectors, axis=-1)
     fgaVectors /= norms[:, :, :, None]
-    fgaVectors[norms > radius] = -1 * fgaVectors[norms > radius] * gravScale
+    fgaVectors[norms > radius] = -1 * fgaVectors[norms > radius]
+    fgaVectors *= gravScale
     print('Application complete!')
 
     ######################################################
