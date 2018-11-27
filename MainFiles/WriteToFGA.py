@@ -34,7 +34,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     numLonPoints = len(lonPoints)
 
     #### For horizontal vector field ###
-    # numLatPoints = 5
+    # numLatPoints = 10
     # numLonPoints = 10
     #
     # directions = np.zeros(numLatPoints * numLonPoints).reshape((numLatPoints, numLonPoints))
@@ -97,8 +97,8 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
 
     ################# GRAVITY ##################
 
-    # Next is applying a gravitational field...
-    # The application will go on any vector which is currently 0
+    # # Next is applying a gravitational field...
+    # # The application will go on any vector which is currently 0
     print('Applying gravity...')
     fgaVectors = np.transpose(np.mgrid[-radius : radius + resStep/2 : resStep,
                  -radius : radius + resStep/2 : resStep,
@@ -118,6 +118,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # we can cycle through each latitude level and interpolate
     # around the longitudes. The interpolation will be linear
     # in the direction i.e. a weighted average.
+    # fgaVectors = np.zeros((DRes, DRes, DRes, 3), dtype=float)
     print('Interpolating vectors...')
     for i, lat in enumerate(latPoints, 0):
         exactLats = exactVectLocs[i]
@@ -200,4 +201,6 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
                             ], fgaVectors))
     with open('.//{}.fga'.format(varNames[0]), 'wb') as f:
         np.savetxt(f, fgaVectors, delimiter=',', newline=',\r\n', fmt='%4.7f')
+    # with open('.//noGravity.fga', 'wb') as f:
+    #     np.savetxt(f, fgaVectors, delimiter=',', newline=',\r\n', fmt='%4.7f')
     print('Unwrapping and writing complete!')
