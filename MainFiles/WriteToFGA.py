@@ -198,9 +198,10 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # # Next is applying a gravitational field...
     # # The application will go on any vector which is currently 0
     print('Applying gravity...')
-    fgaVectors = np.transpose(np.mgrid[-radius : radius + resStep/2 : resStep,
-                 -radius : radius + resStep/2 : resStep,
-                 -radius: radius + resStep/2 : resStep], (1,2,3,0))
+    padRadius = radius + padWidth * resStep
+    fgaVectors = np.transpose(np.mgrid[-padRadius : padRadius + resStep/2 : resStep,
+                 -padRadius : padRadius + resStep/2 : resStep,
+                 -padRadius: padRadius + resStep/2 : resStep], (1,2,3,0))
     # Normalize and flip vectors that
     # are > radius away...
     norms = np.linalg.norm(fgaVectors, axis=-1)
@@ -241,8 +242,12 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # through itertools.product(). We make one each for
     # the point values and index values. We then iterate
     # through them at the same time using zip().
+
+    # From our padding, value space goes from radius
+    # to radius. But our index space now starts at
+    # the padWidth, and goes the length of the value space.
     valueSpace = np.arange(-radius, radius + 1e-10, resStep)
-    indexSpace = np.arange(len(valueSpace))
+    indexSpace = np.arange(padWidth, padWidth + len(valueSpace))
     valueProduct = product(valueSpace, valueSpace, valueSpace)
     indexProduct = product(indexSpace, indexSpace, indexSpace)
     for point, indices in zip(valueProduct, indexProduct):
@@ -299,9 +304,9 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # AND WE'RE DONE. Now unwrap, add in resolution and box data and write to file
     # unwrap
     print('Unwrapping and writing...')
-    print(DRes, fgaVectors.shape)
+    print(DRes, '==>', DRes + 2 * padWidth)
     # DRes += 2 * padWidth
-    fgaVectors = fgaVectors.reshape((DRes ** 3, 3), order='F')
+    fgaVectors = fgaVectors.reshape(((DRes + 2 * padWidth) ** 3, 3), order='F')
 
     fgaVectors = np.vstack(([
                                 [DRes, DRes, DRes],
