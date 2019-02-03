@@ -208,6 +208,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     fgaVectors /= norms[:, :, :, None]
     fgaVectors[norms > radius] = -1 * fgaVectors[norms > radius]
     fgaVectors *= gravScale
+    print(fgaVectors.shape)
     print('Application complete!')
 
     ################# INTERPOLATION ######################
@@ -303,15 +304,16 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
 
     # AND WE'RE DONE. Now unwrap, add in resolution and box data and write to file
     # unwrap
+    # print(fgaVectors)
     print('Unwrapping and writing...')
     print(DRes, '==>', DRes + 2 * padWidth)
-    # DRes += 2 * padWidth
-    fgaVectors = fgaVectors.reshape(((DRes + 2 * padWidth) ** 3, 3), order='F')
+    DRes += 2 * padWidth
+    fgaVectors = fgaVectors.reshape((DRes ** 3, 3), order='F')
 
     fgaVectors = np.vstack(([
                                 [DRes, DRes, DRes],
-                                [-radius, -radius, -radius],
-                                [radius, radius, radius]
+                                [-padRadius, -padRadius, -padRadius],
+                                [padRadius, padRadius, padRadius]
                             ], fgaVectors))
     with open('.//{}.fga'.format(varNames[0]), 'wb') as f:
         np.savetxt(f, fgaVectors, delimiter=',', newline=',\r\n', fmt='%4.7f')
