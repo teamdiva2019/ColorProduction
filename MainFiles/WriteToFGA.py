@@ -31,7 +31,7 @@ def findBoxPointsAndWeights(
     # Longitude weights are normal
     # TODO: Handle the case where longitudal points don't start at 0.
     if leftLon == -1:
-        diff = 2 * np.pi - longitudes[leftLon]
+        diff = 2 * np.pi - longitudes[rightLon]
     else:
         diff = longitudes[rightLon] - longitudes[leftLon]
     weightLon = (targetLon - longitudes[leftLon]) / diff
