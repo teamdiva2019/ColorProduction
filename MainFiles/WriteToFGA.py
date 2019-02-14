@@ -24,9 +24,15 @@ def findBoxPointsAndWeights(
         targetLon: float,
         latitudes: np.array,
         longitudes: np.array):
+    # searchsorted is right justified,
+    # so it's always the higher value.
     upperLat = latitudes.searchsorted(targetLat)
+    # Modding is used so that it wraps around.
     rightLon = longitudes.searchsorted(targetLon) % len(longitudes)
     leftLon = rightLon - 1
+
+    # Weights go from lower value to upper value.
+
 
     # Longitude weights are normal
     # TODO: Handle the case where longitudal points don't start at 0.
@@ -78,8 +84,8 @@ def findBoxPointsAndWeights(
     # Otherwise, calculate the lower latitude
     # as normal
     lowerLat = upperLat - 1
-    # Latitude weight is normal
-    weightLat = (latitudes[upperLat] - targetLat) / (latitudes[upperLat] - latitudes[lowerLat])
+    # Latitude weight is normal. GO from lawerLat to upperLat
+    weightLat = (targetLat - latitudes[lowerLat]) / (latitudes[upperLat] - latitudes[lowerLat])
     return [
         (upperLat, leftLon),
         (upperLat, rightLon),
@@ -288,6 +294,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
 
             # Point 4 is assumed to be diagonally opposite Point 1,
             # and Point 2 is assumed to be horizontally opposite Point 1.
+            # Point 1 is the lower left point.
             # First we need to find the two vectors directly
             # above and below (left and right also works) our
             # target location.
@@ -295,6 +302,9 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
             interBelow = (1-weightLon) * vects3D[boxLocs[2]] + weightLon * vects3D[boxLocs[3]]
             # Now we interpolate vertically
             # between these two points
+            # If something is 20% of the distance from point
+            # A to point B, then it's 80% of point A and
+            # 20% of point B.
 
             interedVec = (1-weightLat) * interBelow + weightLat * interAbove
 
