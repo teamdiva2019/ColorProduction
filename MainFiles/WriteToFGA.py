@@ -30,8 +30,11 @@ def findBoxPointsAndWeights(
 
     # Longitude weights are normal
     # TODO: Handle the case where longitudal points don't start at 0.
+    # Right now, they are assumed to start at 0
     if leftLon == -1:
         diff = 2 * np.pi - longitudes[leftLon]
+        if longitudes[rightLon] == targetLon:  # i.e. longitudes[0]
+            targetLon = 2 * np.pi
     else:
         diff = longitudes[rightLon] - longitudes[leftLon]
     weightLon = (targetLon - longitudes[leftLon]) / diff
@@ -76,7 +79,7 @@ def findBoxPointsAndWeights(
     # as normal
     lowerLat = upperLat - 1
     # Latitude weight is normal
-    weightLat = (targetLat - latitudes[upperLat]) / (latitudes[upperLat] - latitudes[lowerLat])
+    weightLat = (latitudes[upperLat] - targetLat) / (latitudes[upperLat] - latitudes[lowerLat])
     return [
         (upperLat, leftLon),
         (upperLat, rightLon),
@@ -122,9 +125,9 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # numLatPoints = 10
     # numLonPoints = 10
     #
-    # directions = np.zeros(numLatPoints * numLonPoints).reshape((numLatPoints, numLonPoints))
-    # u = np.cos(directions)
-    # v = np.sin(directions)
+    directions = np.zeros(numLatPoints * numLonPoints).reshape((numLatPoints, numLonPoints))
+    u = np.cos(directions)
+    v = np.sin(directions)
     # plt.quiver(u, v)
     # plt.show()
     #
@@ -133,7 +136,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     #                       180 / (numLatPoints + 1)) * np.pi / 180
     # lonPoints = np.arange(0, 360 - 360 / numLonPoints, 360 / numLonPoints)
 
-    u, v = allVariables[varNames[0]][0], allVariables[varNames[1]][0]
+    # u, v = allVariables[varNames[0]][0], allVariables[varNames[1]][0]
     # print(u[:2], v[:2])
     # plt.quiver(lonPoints * 180 / np.pi, latPoints * 180 / np.pi, u, v)
     # plt.savefig('plotDownSample.png', dpi=300)
@@ -280,6 +283,8 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
             # intended.
 
             boxLocs, weightLat, weightLon = findBoxPointsAndWeights(lat, lon, latPoints, lonPoints)
+
+            # print(boxLocs, '({}, {}) ==> '.format(weightLat, weightLon), end='')
 
             # Point 4 is assumed to be diagonally opposite Point 1,
             # and Point 2 is assumed to be horizontally opposite Point 1.
