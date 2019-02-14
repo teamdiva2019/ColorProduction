@@ -1,0 +1,22 @@
+Variables
+UGRD_10maboveground
+U-Component of Wind
+m/s
+VGRD_10maboveground
+V-Component of Wind
+m/s
+Shape
+[721, 94, 192]
+Dimensions
+time
+2003-09-01 00:00:00
+2003-10-01 00:00:00
+1:00:00
+latitude
+-88.54195013747103
+88.54195013747103
+1.888782966209817
+longitude
+0.0
+358.125
+1.875
