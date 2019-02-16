@@ -131,9 +131,9 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     # numLatPoints = 10
     # numLonPoints = 10
     #
-    directions = np.zeros(numLatPoints * numLonPoints).reshape((numLatPoints, numLonPoints))
-    u = np.cos(directions)
-    v = np.sin(directions)
+    # directions = np.zeros(numLatPoints * numLonPoints).reshape((numLatPoints, numLonPoints))
+    # u = np.cos(directions)
+    # v = np.sin(directions)
     # plt.quiver(u, v)
     # plt.show()
     #
@@ -142,7 +142,7 @@ def writeFGAFile(data, radius, resStep, padWidth=1):
     #                       180 / (numLatPoints + 1)) * np.pi / 180
     # lonPoints = np.arange(0, 360 - 360 / numLonPoints, 360 / numLonPoints)
 
-    # u, v = allVariables[varNames[0]][0], allVariables[varNames[1]][0]
+    u, v = allVariables[varNames[0]][0], allVariables[varNames[1]][0]
     # print(u[:2], v[:2])
     # plt.quiver(lonPoints * 180 / np.pi, latPoints * 180 / np.pi, u, v)
     # plt.savefig('plotDownSample.png', dpi=300)
