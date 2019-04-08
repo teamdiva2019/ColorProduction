@@ -55,6 +55,9 @@ class Metadata:
             data = np.stack([self.allVariables[var][self.sTIndex : self.eTIndex + 1].flatten()
                              for var in self.varNames])
         if isinstance(data, np.ma.core.MaskedArray):
+            if(hasattr(self.allVariables[self.varNames[0]], '_FillValue')):
+                fillvalue = self.allVariables[self.varNames[0]]._FillValue
+                data[np.where(data == fillvalue)] = np.nan
             data = data.filled(np.nan)
         return np.linalg.norm(data, axis=0)
 
@@ -62,11 +65,11 @@ class Metadata:
     # a file and returns the loaded data.
     def writeMetadata(self):
         scriptDir = os.path.dirname(os.path.realpath(__file__))
-        with open(scriptDir + './/metadata.txt', 'w') as f:
+        with open('metadata.txt', 'w') as f:
+            f.write('%d\n' % len(self.varNames))
             # For each variable, write the name of it
-            f.write('Variables\n')
             for var in self.varNames:
-                f.write(var + '\n' + self.allVariables[var].long_name +
+                f.write(self.allVariables[var].long_name + '\n' + self.allVariables[var].name +
                         '\n' + self.allVariables[var].units + '\n')
             # Read in the data. No distinction here on whether 1D or 2D
             # Stack x1, x2, ..., xn coordinates on top of each other
@@ -85,7 +88,8 @@ class Metadata:
             # For each dimension, write the name,
             # the start value, the end value,
             # and the step
-            dimstr = 'Dimensions\n'
+            # dimstr = 'Dimensions\n'
+            dimstr = ''
             for dim in varDims:
                 vals = self.allVariables[dim][:]
                 if dim == 'time':
@@ -131,7 +135,7 @@ class Metadata:
                 dataShape[0] = 1
             else:
                 dataShape[0] = self.eTIndex - self.sTIndex + 1
-            f.write('Shape\n')
+            # f.write('Shape\n')
             f.write(str(dataShape) + '\n')
             f.write(dimstr)
 

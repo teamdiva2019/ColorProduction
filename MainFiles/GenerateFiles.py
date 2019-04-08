@@ -12,8 +12,8 @@ import datetime as dt
 sys.path.append('.//MainFiles')
 from MakeAndSavePUMap import makeColorMap
 from WriteToFGA import writeFGAFile
+#from MapVectorsTo3D import writeFGAFile
 from Metadata import Metadata
-# from MapVectorsTo3D import writeFGAFile
 
 def isNCFile(filename):
     if filename[-3:] != '.nc':
@@ -61,7 +61,7 @@ parser.add_argument('-et', '--endtime', required=False, type=isCorrectDateFormat
 parser.add_argument('-ts', '--timestamp', required=False, type=isCorrectDateFormat,
                     dest='time_stamp',
                     help='Specify a certain time stamp to get data from in '
-                         'YYYY-MM-DD-HH-MM-SS. OVERRIDES start and end time '
+                         'YYYY-MM-DD-HH:MM:SS. OVERRIDES start and end time '
                          'arguments.')
 
 args = parser.parse_args(sys.argv[1:])
@@ -101,10 +101,12 @@ minVal = np.nanmin(data)
 maxVal = np.nanmax(data)
 
 # Read the colormap
-PUcols = np.loadtxt(os.path.join(scriptDir, '..//ColorMaps//' + args.colormap + '.txt'))
+PUcols = np.loadtxt(scriptDir + '\\..\\ColorMaps\\' + args.colormap + '.txt')
 
 # Create the Color map object
 gendMap = ListedColormap(PUcols, N=len(PUcols))
+# Can't make a color nap with NaN values so we set to them to a value out of the color map
+data[np.isnan(data)] = minVal - 5
 # Set nan values as black
 gendMap.set_under('black', 1)
 
@@ -117,7 +119,7 @@ mapper = cm.ScalarMappable(norm=norm, cmap=gendMap)
 colorMappedData = mapper.to_rgba(data, alpha=False, bytes=True)[:, :3]
 
 # Save the data to a binary file to minimize size
-colorMappedData.tofile(os.path.join(scriptDir, '..//ColorFromData//colors_' + meta.varNames[0] + '.bin'))
+colorMappedData.tofile('colors_' + meta.varNames[0] + '.bin')
 
 # See if we need to make an fga file
 if isVectorized:
